@@ -64,20 +64,31 @@ results = pricer.value_contract(
 print(results['contract_value'])
 ```
 
+## 📝 Methodology & Mathematical Model
+
+### Core Valuation Logic (`price_contract`)
+The valuation follows a standard Profit & Loss (P&L) formula for natural gas storage contracts:
+**`Contract Value = (Withdrawal Revenues - Withdrawal Fees) - (Injection Costs + Injection Fees) - (Storage Costs) - (Transport Costs)`**
+
+#### Detailed Components:
+- **Injection Cost**: Calculated as `(Purchase Price * Volume) + (Injection fee * Volume / 1e6)`.
+- **Withdrawal Revenue**: Calculated as `(Sale Price * Volume) - (Withdrawal fee * Volume / 1e6)`.
+- **Storage Cost**: Calculated based on the number of months the gas is held: `Monthly Storage Cost * Storage Duration (Months)`.
+- **Transport Cost**: Assumed to be incurred twice (to and from the facility).
+
+#### Step-by-Step Calculation Process:
+1. **Date Conversion**: All dates are normalized to datetime objects.
+2. **Price Forecasting**: The system identifies the market price for the specific dates using historical data or the ARIMA forecasting model.
+3. **Injection Analysis**: For each injection date, the system calculates the volume to be stored (capped by daily injection rates and total storage capacity). 
+4. **Storage Evaluation**: The duration between the first injection and last withdrawal is calculated to determine total storage overhead.
+5. **Withdrawal Analysis**: For each withdrawal date, the system calculates the revenue from selling the stored inventory (capped by daily withdrawal rates and current available volume).
+6. **Final Valuation**: Sums all variable revenues and subtracts all fixed and variable costs.
+
+### Price Forecasting (ARIMA)
+Natural gas prices exhibit significant cycles. This project uses the `statsmodels` implementation of the **ARIMA (AutoRegressive Integrated Moving Average)** algorithm (specifically an ARIMA(1,1,1) configuration) to project future price movements, enabling the valuation of forward-dated contracts.
+
 ## 🧪 Testing
 Run the test suite to ensure accuracy:
 ```bash
 pytest tests/
 ```
-
-## 📝 Methodology
-
-### Price Forecasting
-Natural gas prices exhibit significant seasonality. This model utilizes the `statsmodels` implementation of the ARIMA algorithm to capture historical trends and project future price movements, allowing users to value contracts that extend beyond current market data.
-
-### Valuation Logic
-The valuation follows the standard Profit & Loss (P&L) formula:
-`Contract Value = (Sum of Withdrawal Revenues) - (Sum of Injection Costs) - (Storage Fees) - (Transport Costs)`
-- **Injection Cost** = (Purchase Price + Injection Fee) * Volume
-- **Withdrawal Revenue** = (Sale Price - Withdrawal Fee) * Volume
-- **Storage Cost** = Monthly Fee * Duration (Months)
